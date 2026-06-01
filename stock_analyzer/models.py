@@ -54,9 +54,10 @@ class AnalysisResult:
     Attributes:
         ticker: 분석 대상 티커 (예: "AAPL").
         recommendation: 최종 추천 등급.
-        composite_score: 기술적/기본적 점수를 가중합한 최종 점수 (-1.0 ~ +1.0).
+        composite_score: 기술적/기본적/뉴스 점수를 가중합한 최종 점수 (-1.0 ~ +1.0).
         technical_score: 기술적 분석 점수 (-1.0 ~ +1.0).
         fundamental_score: 기본적 분석 점수 (-1.0 ~ +1.0).
+        news_score: 뉴스 감성 점수 (-1.0 ~ +1.0). 뉴스 분석을 안 했으면 None.
         signals: 분석에 사용된 모든 개별 신호.
         reasons: 추천 근거 요약 문자열 목록.
     """
@@ -66,6 +67,7 @@ class AnalysisResult:
     composite_score: float
     technical_score: float
     fundamental_score: float
+    news_score: float | None = None
     signals: list[Signal] = field(default_factory=list)
     reasons: list[str] = field(default_factory=list)
 
@@ -76,7 +78,44 @@ class AnalysisResult:
             f"(종합 점수 {self.composite_score:+.2f})",
             f"  - 기술적 점수: {self.technical_score:+.2f}",
             f"  - 기본적 점수: {self.fundamental_score:+.2f}",
-            "  근거:",
         ]
+        if self.news_score is not None:
+            lines.append(f"  - 뉴스 점수: {self.news_score:+.2f}")
+        lines.append("  근거:")
         lines.extend(f"    · {reason}" for reason in self.reasons)
+        return "\n".join(lines)
+
+
+@dataclass
+class NewsDigest:
+    """특정 토픽에 대한 뉴스 종합 분석 결과 (기능 1·2).
+
+    Attributes:
+        topic: 검색 토픽 (예: "AI").
+        article_count: 분석한 기사 수.
+        overall_score: 전체 평균 감성 점수 (-1.0 ~ +1.0).
+        overall_label: 전체 감성 라벨 (positive/negative/neutral).
+        market_impact: 시장 영향 서술형 요약.
+        headlines: (제목, 감성점수, 라벨) 튜플 목록.
+    """
+
+    topic: str
+    article_count: int
+    overall_score: float
+    overall_label: str
+    market_impact: str
+    headlines: list[tuple[str, float, str]] = field(default_factory=list)
+
+    def summary(self) -> str:
+        """다이제스트를 보기 좋은 문자열로 반환한다."""
+        lines = [
+            f"=== '{self.topic}' 뉴스 다이제스트 (기사 {self.article_count}건) ===",
+            f"전체 감성: {self.overall_label} ({self.overall_score:+.2f})",
+            "",
+            f"[시장 영향] {self.market_impact}",
+            "",
+            "주요 헤드라인:",
+        ]
+        for title, score, label in self.headlines:
+            lines.append(f"  · ({score:+.2f} {label}) {title}")
         return "\n".join(lines)

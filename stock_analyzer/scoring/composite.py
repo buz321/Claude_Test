@@ -34,6 +34,25 @@ def composite_score(
     return technical_score * technical_weight + fundamental_score * fundamental_weight
 
 
+def weighted_score(components: dict[str, float], weights: dict[str, float]) -> float:
+    """여러 점수를 가중 평균한다.
+
+    components에 존재하는 키만 사용하며, 해당 키의 가중치 합으로 정규화한다.
+    예: 뉴스 분석을 안 한 경우 'news'를 빼면 나머지 가중치로 자동 재정규화된다.
+
+    Args:
+        components: {"technical": 0.3, "fundamental": -0.1, ...}
+        weights: {"technical": 0.4, "fundamental": 0.4, "news": 0.2}
+
+    Returns:
+        가중 평균 점수. 유효한 가중치 합이 0이면 0.0.
+    """
+    total_weight = sum(weights.get(k, 0.0) for k in components)
+    if total_weight <= 0:
+        return 0.0
+    return sum(components[k] * weights.get(k, 0.0) for k in components) / total_weight
+
+
 def recommend(score: float) -> Recommendation:
     """종합 점수를 추천 등급으로 변환한다."""
     return Recommendation.from_score(score)
