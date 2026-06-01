@@ -17,6 +17,9 @@ dependencies = [
     "yfinance>=0.2.40",
 ]
 
+[project.scripts]
+stock-analyzer = "stock_analyzer.cli:main"
+
 [project.optional-dependencies]
 viz = [
     "matplotlib>=3.7",

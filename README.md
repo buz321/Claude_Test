@@ -27,7 +27,31 @@ pip install -e ".[llm]"
 pip install -e ".[dev]"
 ```
 
-## 사용법
+## CLI 사용법
+
+설치하면 `stock-analyzer` 명령(또는 `python -m stock_analyzer`)을 쓸 수 있습니다.
+
+```bash
+# 종목 분석
+stock-analyzer analyze AAPL
+stock-analyzer analyze NVDA --news            # 뉴스 감성까지 반영
+stock-analyzer analyze NVDA --news --llm      # 뉴스 감성에 Claude API 사용
+
+# 토픽 뉴스 다이제스트
+stock-analyzer news AI --limit 20 --days 1
+
+# 차트 저장
+stock-analyzer chart AAPL --out aapl.png
+
+# JSON 출력
+stock-analyzer analyze AAPL --json
+```
+
+> 💡 **`--demo` 플래그**: 네트워크 없이 내장 가짜 데이터로 동작을 확인할 수 있습니다.
+> `stock-analyzer analyze AAPL --demo --news` 처럼 쓰면 키/네트워크 없이 전체 흐름을 볼 수 있어요.
+> 실데이터는 `yfinance`(시세)·`NewsAPI`(뉴스)·`Anthropic API`(LLM 감성) 접근이 필요합니다.
+
+## 라이브러리 사용법
 
 ```python
 from stock_analyzer import StockAnalyzer
