@@ -40,6 +40,10 @@ stock-analyzer analyze NVDA --news --llm      # 뉴스 감성에 Claude API 사�
 # 토픽 뉴스 다이제스트
 stock-analyzer news AI --limit 20 --days 1
 
+# 포트폴리오: 여러 종목 비교·랭킹
+stock-analyzer portfolio AAPL MSFT NVDA TSLA GOOGL
+stock-analyzer portfolio AAPL NVDA --news     # 뉴스까지 반영
+
 # 차트 저장
 stock-analyzer chart AAPL --out aapl.png
 
@@ -130,6 +134,19 @@ print(result.recommendation)   # 기술+기본+뉴스 종합 추천
 기본 가중치는 기술 0.4 / 기본 0.4 / 뉴스 0.2이며 `weights` 인자로 조정할 수 있습니다.
 뉴스 provider를 주입하지 않으면 기존 2차원(기술+기본) 분석으로 동작합니다.
 
+### 포트폴리오 분석 (여러 종목 랭킹)
+
+```python
+from stock_analyzer import PortfolioAnalyzer
+
+result = PortfolioAnalyzer().analyze(["AAPL", "MSFT", "NVDA", "TSLA"])
+print(result.summary())     # 종합 점수 순 순위표
+print(result.best.ticker)   # 최상위 종목
+print(result.average_score) # 포트폴리오 평균 점수
+```
+
+개별 종목 분석이 실패해도 나머지는 계속 진행되며, 실패 종목은 `result.errors`에 기록됩니다.
+
 ### 데이터 소스 주입 (테스트/오프라인)
 
 ```python
@@ -159,6 +176,9 @@ stock_analyzer/
   scoring/             # 종합 점수(composite, weighted_score)
   analyzer.py          # StockAnalyzer 파사드 (기술+기본+뉴스)
   news_analyzer.py     # NewsAnalyzer 파사드 (토픽 다이제스트)
+  portfolio.py         # PortfolioAnalyzer 파사드 (여러 종목 랭킹)
+  cli.py / __main__.py # CLI (analyze/news/portfolio/chart)
+  demo.py              # 오프라인 데모용 결정론적 데이터 제공자
   viz/                 # matplotlib 차트
 tests/                 # fixture 기반 단위 테스트 (네트워크 불필요)
 examples/              # 사용 예시
@@ -179,8 +199,8 @@ pytest
 
 ## 향후 확장 아이디어
 
-- CLI 래퍼 / Streamlit 인터랙티브 대시보드
-- 백테스팅, 포트폴리오 분석
+- Streamlit 인터랙티브 대시보드
+- 백테스팅, 포트폴리오 비중 최적화
 - 한국 주식 등 다른 시장 지원
 - 뉴스 소스 확장(Finnhub, RSS), 종목별 뉴스 캐싱
 

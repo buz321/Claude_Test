@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from .data import DataProvider
-from .news import MockNewsProvider, NewsArticle
+from .news import MockNewsProvider, NewsArticle, NewsProvider
 
 
 def _seed_for(ticker: str) -> int:
@@ -64,22 +64,41 @@ _NEUTRAL_TEMPLATES = [
 ]
 
 
-def demo_news_provider(query: str) -> MockNewsProvider:
-    """질의어를 포함하는 가짜 기사 묶음을 가진 MockNewsProvider를 만든다."""
+def _demo_articles(query: str) -> list[NewsArticle]:
+    """질의어를 포함하는 결정론적 가짜 기사 묶음을 생성한다."""
     rng = np.random.default_rng(_seed_for(query) + 2)
     base = datetime.today()
     templates = _POSITIVE_TEMPLATES + _NEGATIVE_TEMPLATES + _NEUTRAL_TEMPLATES
-    articles: list[NewsArticle] = []
-    for i, tmpl in enumerate(templates):
-        # 질의어가 본문에 포함되도록 한다.
-        title = tmpl.format(t=query)
-        articles.append(
-            NewsArticle(
-                title=title,
-                summary=f"{query} 관련 시장 동향 보도.",
-                source="DemoWire",
-                published_at=base - timedelta(hours=i),
-            )
+    articles = [
+        NewsArticle(
+            title=tmpl.format(t=query),
+            summary=f"{query} 관련 시장 동향 보도.",
+            source="DemoWire",
+            published_at=base - timedelta(hours=i),
         )
+        for i, tmpl in enumerate(templates)
+    ]
     rng.shuffle(articles)
-    return MockNewsProvider(articles)
+    return articles
+
+
+class DemoNewsProvider(NewsProvider):
+    """임의의 질의어에 대해 가짜 기사를 생성하는 제공자.
+
+    종목마다 질의어가 달라지는 포트폴리오 분석에도 쓸 수 있다.
+    """
+
+    def get_news(self, query, *, limit=20, since=None):
+        articles = _demo_articles(query)
+        if since is not None:
+            articles = [
+                a
+                for a in articles
+                if a.published_at is not None and a.published_at.date() >= since
+            ]
+        return articles[:limit]
+
+
+def demo_news_provider(query: str) -> MockNewsProvider:
+    """단일 질의어용 MockNewsProvider (기존 호환)."""
+    return MockNewsProvider(_demo_articles(query))

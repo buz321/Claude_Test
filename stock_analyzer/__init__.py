@@ -2,16 +2,25 @@
 
 from .analyzer import StockAnalyzer
 from .data import DataProvider, YFinanceProvider
-from .models import AnalysisResult, NewsDigest, Recommendation, Signal
+from .models import (
+    AnalysisResult,
+    NewsDigest,
+    PortfolioResult,
+    Recommendation,
+    Signal,
+)
 from .news_analyzer import NewsAnalyzer
+from .portfolio import PortfolioAnalyzer
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "StockAnalyzer",
     "NewsAnalyzer",
+    "PortfolioAnalyzer",
     "AnalysisResult",
     "NewsDigest",
+    "PortfolioResult",
     "Recommendation",
     "Signal",
     "DataProvider",

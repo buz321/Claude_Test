@@ -87,6 +87,55 @@ class AnalysisResult:
 
 
 @dataclass
+class PortfolioResult:
+    """여러 종목을 분석해 종합 점수로 순위를 매긴 결과.
+
+    Attributes:
+        results: 종합 점수 내림차순으로 정렬된 종목별 분석 결과.
+        errors: 분석에 실패한 종목 → 오류 메시지.
+    """
+
+    results: list["AnalysisResult"] = field(default_factory=list)
+    errors: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def average_score(self) -> float:
+        """포트폴리오 전체의 평균 종합 점수."""
+        if not self.results:
+            return 0.0
+        return sum(r.composite_score for r in self.results) / len(self.results)
+
+    @property
+    def best(self) -> "AnalysisResult | None":
+        return self.results[0] if self.results else None
+
+    @property
+    def worst(self) -> "AnalysisResult | None":
+        return self.results[-1] if self.results else None
+
+    def summary(self) -> str:
+        """순위표 형태의 문자열로 반환한다."""
+        lines = [
+            f"=== 포트폴리오 분석 ({len(self.results)}개 종목) ===",
+            f"평균 종합 점수: {self.average_score:+.2f}",
+            "",
+            f"{'순위':<4}{'티커':<8}{'추천':<13}{'종합':>7}{'기술':>7}{'기본':>7}{'뉴스':>7}",
+        ]
+        for i, r in enumerate(self.results, 1):
+            news = f"{r.news_score:+.2f}" if r.news_score is not None else "  -  "
+            lines.append(
+                f"{i:<4}{r.ticker:<8}{r.recommendation.value:<13}"
+                f"{r.composite_score:>+7.2f}{r.technical_score:>+7.2f}"
+                f"{r.fundamental_score:>+7.2f}{news:>7}"
+            )
+        if self.errors:
+            lines.append("")
+            lines.append("분석 실패:")
+            lines.extend(f"  · {t}: {msg}" for t, msg in self.errors.items())
+        return "\n".join(lines)
+
+
+@dataclass
 class NewsDigest:
     """특정 토픽에 대한 뉴스 종합 분석 결과 (기능 1·2).
 

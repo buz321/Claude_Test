@@ -42,11 +42,11 @@ def _make_sentiment(use_llm: bool):
     return LexiconSentimentAnalyzer()
 
 
-def _make_news_provider(demo: bool, query: str):
+def _make_news_provider(demo: bool):
     if demo:
-        from .demo import demo_news_provider
+        from .demo import DemoNewsProvider
 
-        return demo_news_provider(query)
+        return DemoNewsProvider()
     from .news import NewsApiProvider
 
     return NewsApiProvider()
@@ -59,7 +59,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     news_provider = None
     sentiment = None
     if args.news:
-        news_provider = _make_news_provider(args.demo, args.ticker)
+        news_provider = _make_news_provider(args.demo)
         sentiment = _make_sentiment(args.llm)
 
     analyzer = StockAnalyzer(
@@ -89,7 +89,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
 def cmd_news(args: argparse.Namespace) -> int:
     from .news_analyzer import NewsAnalyzer
 
-    provider = _make_news_provider(args.demo, args.topic)
+    provider = _make_news_provider(args.demo)
     sentiment = _make_sentiment(args.llm)
     since = date.today() - timedelta(days=args.days) if args.days else None
 
@@ -102,6 +102,39 @@ def cmd_news(args: argparse.Namespace) -> int:
         print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
     else:
         print(digest.summary())
+    return 0
+
+
+def cmd_portfolio(args: argparse.Namespace) -> int:
+    from .portfolio import PortfolioAnalyzer
+
+    provider = _make_price_provider(args.demo)
+    news_provider = None
+    sentiment = None
+    if args.news:
+        news_provider = _make_news_provider(args.demo)
+        sentiment = _make_sentiment(args.llm)
+
+    result = PortfolioAnalyzer(
+        provider=provider,
+        news_provider=news_provider,
+        sentiment=sentiment,
+    ).analyze(args.tickers, period=args.period)
+
+    if args.json:
+        from dataclasses import asdict
+
+        data = {
+            "average_score": result.average_score,
+            "results": [
+                {**asdict(r), "recommendation": r.recommendation.value}
+                for r in result.results
+            ],
+            "errors": result.errors,
+        }
+        print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
+    else:
+        print(result.summary())
     return 0
 
 
@@ -165,6 +198,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="감성/시장영향에 Claude API 사용 (ANTHROPIC_API_KEY 필요)",
     )
     p_news.set_defaults(func=cmd_news)
+
+    p_portfolio = sub.add_parser(
+        "portfolio", parents=[common], help="여러 종목을 분석해 순위표 출력"
+    )
+    p_portfolio.add_argument("tickers", nargs="+", help="티커 목록 (예: AAPL MSFT NVDA)")
+    p_portfolio.add_argument("--period", default="1y", help="시세 기간 (기본 1y)")
+    p_portfolio.add_argument(
+        "--news", action="store_true", help="각 종목 뉴스 감성을 반영"
+    )
+    p_portfolio.add_argument(
+        "--llm",
+        action="store_true",
+        help="뉴스 감성에 Claude API 사용 (ANTHROPIC_API_KEY 필요)",
+    )
+    p_portfolio.set_defaults(func=cmd_portfolio)
 
     p_chart = sub.add_parser(
         "chart", parents=[common], help="종목 차트를 PNG로 저장"
