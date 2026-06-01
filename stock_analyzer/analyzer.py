@@ -55,6 +55,34 @@ class StockAnalyzer:
             reasons=[signal.reason for signal in all_signals],
         )
 
+    def plot(
+        self,
+        period: str = "1y",
+        *,
+        save_path: str | None = None,
+        show: bool = False,
+    ):
+        """종목을 분석하고 차트를 그린다.
+
+        가격/이동평균/볼린저밴드, RSI, MACD를 3단 차트로 시각화하며
+        제목에 추천 등급과 종합 점수를 표시한다.
+
+        Args:
+            period: 시세 조회 기간.
+            save_path: 지정하면 해당 경로에 PNG로 저장한다.
+            show: True면 plt.show() 호출 (GUI 환경 전용).
+
+        Returns:
+            (AnalysisResult, figure) 튜플.
+        """
+        from .viz import plot_analysis
+
+        history = self.provider.get_price_history(self.ticker, period=period)
+        close = history["Close"]
+        result = self.analyze(period=period)
+        fig, _ = plot_analysis(close, result, save_path=save_path, show=show)
+        return result, fig
+
     def _technical_signals(self, period: str) -> list[Signal]:
         history = self.provider.get_price_history(self.ticker, period=period)
         close = history["Close"]
