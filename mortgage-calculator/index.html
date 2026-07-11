@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HomeReach — Mortgage Affordability Calculator</title>
+  <meta name="description" content="Find out how much you can borrow and what price of home you can afford in the UK or US." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%8C%82%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="logo">
+        <span class="logo-mark">⌂</span>
+        <span class="logo-text">HomeReach</span>
+      </div>
+      <div class="country-toggle" role="tablist" aria-label="Country">
+        <button class="toggle-btn active" data-country="uk" role="tab" aria-selected="true">🇬🇧 UK</button>
+        <button class="toggle-btn" data-country="us" role="tab" aria-selected="false">🇺🇸 US</button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-badge">Mortgage affordability, simplified</div>
+    <h1>How much home<br /><span class="gradient-text">can you afford?</span></h1>
+    <p class="hero-sub">Enter your combined household income and we'll estimate your borrowing power, maximum property price, and homes within reach in your area.</p>
+  </header>
+
+  <main class="container">
+    <div class="calc-grid">
+      <!-- ============ INPUTS ============ -->
+      <section class="card inputs-card">
+        <h2 class="card-title">Your details</h2>
+
+        <div class="field">
+          <label for="income">Combined annual income <span class="hint">(before tax)</span></label>
+          <div class="input-wrap">
+            <span class="currency-symbol">£</span>
+            <input type="text" id="income" inputmode="numeric" value="75,000" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="deposit"><span class="deposit-label">Deposit</span> <span class="hint">(cash you'll put down)</span></label>
+          <div class="input-wrap">
+            <span class="currency-symbol">£</span>
+            <input type="text" id="deposit" inputmode="numeric" value="40,000" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="field us-only" hidden>
+          <label for="debts">Monthly debt payments <span class="hint">(loans, cards, car)</span></label>
+          <div class="input-wrap">
+            <span class="currency-symbol">$</span>
+            <input type="text" id="debts" inputmode="numeric" value="0" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="field uk-only">
+          <div class="slider-head">
+            <label for="multiple">Income multiple</label>
+            <span class="slider-value" id="multiple-value">4.5×</span>
+          </div>
+          <input type="range" id="multiple" min="3.5" max="5.5" step="0.25" value="4.5" />
+          <p class="field-note">Most UK lenders offer 4–4.5× income; some go to 5.5× for higher earners.</p>
+        </div>
+
+        <div class="field us-only" hidden>
+          <div class="slider-head">
+            <label for="dti">Debt-to-income ratio</label>
+            <span class="slider-value" id="dti-value">36%</span>
+          </div>
+          <input type="range" id="dti" min="28" max="43" step="1" value="36" />
+          <p class="field-note">36% is the standard guideline; up to 43% may qualify for some loans.</p>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <div class="slider-head">
+              <label for="rate">Interest rate</label>
+              <span class="slider-value" id="rate-value">4.5%</span>
+            </div>
+            <input type="range" id="rate" min="1" max="10" step="0.1" value="4.5" />
+          </div>
+          <div class="field">
+            <div class="slider-head">
+              <label for="term">Term</label>
+              <span class="slider-value" id="term-value">30 yrs</span>
+            </div>
+            <input type="range" id="term" min="5" max="40" step="1" value="30" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ RESULTS ============ -->
+      <section class="card results-card">
+        <h2 class="card-title">Your buying power</h2>
+
+        <div class="result-hero">
+          <div class="result-label">Maximum property price</div>
+          <div class="result-big" id="result-price">£377,500</div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="result-label">You could borrow</div>
+            <div class="result-num" id="result-loan">£337,500</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Monthly payment</div>
+            <div class="result-num" id="result-monthly">£1,710</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Loan-to-value</div>
+            <div class="result-num" id="result-ltv">89%</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label" id="ratio-label">Income multiple</div>
+            <div class="result-num" id="result-ratio">4.5×</div>
+          </div>
+        </div>
+
+        <div class="ltv-bar">
+          <div class="ltv-track"><div class="ltv-fill" id="ltv-fill"></div></div>
+          <div class="ltv-caption"><span>Deposit</span><span>Mortgage</span></div>
+        </div>
+
+        <p class="result-note" id="result-note">Based on a 4.5× income multiple — typical for UK lenders.</p>
+      </section>
+    </div>
+
+    <!-- ============ REGION / PROPERTIES ============ -->
+    <section class="card region-card">
+      <div class="region-head">
+        <div>
+          <h2 class="card-title">Homes within reach</h2>
+          <p class="region-sub">Pick an area to see how your budget compares — then browse real listings in your price range.</p>
+        </div>
+        <div class="select-wrap">
+          <select id="region-select" aria-label="Select a region"></select>
+        </div>
+      </div>
+
+      <div class="region-body" id="region-body">
+        <div class="region-stats">
+          <div class="region-stat">
+            <div class="result-label">Average price in <span id="region-name">London</span></div>
+            <div class="result-num" id="region-avg">£530,000</div>
+          </div>
+          <div class="region-stat">
+            <div class="result-label">Your maximum budget</div>
+            <div class="result-num" id="region-budget">£377,500</div>
+          </div>
+          <div class="region-stat">
+            <div class="result-label">Verdict</div>
+            <div class="badge" id="region-badge">Above budget</div>
+          </div>
+        </div>
+
+        <div class="compare-bar">
+          <div class="compare-track">
+            <div class="compare-fill" id="compare-fill"></div>
+            <div class="compare-marker" id="compare-marker" title="Area average"></div>
+          </div>
+          <div class="compare-caption">
+            <span>Your budget vs. area average</span>
+            <span id="compare-pct">71% of average</span>
+          </div>
+        </div>
+
+        <a class="cta-btn" id="browse-btn" href="#" target="_blank" rel="noopener noreferrer">
+          Browse real listings in your range
+          <span class="cta-range" id="cta-range">£190,000 – £377,500</span>
+          <span class="cta-arrow">→</span>
+        </a>
+        <p class="field-note" id="browse-note">Opens Zoopla with your price range pre-filtered.</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Estimates only — not financial advice. Actual lending depends on credit history, outgoings, and lender criteria. US figures exclude property taxes, insurance, and HOA fees. Area averages are indicative.</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
