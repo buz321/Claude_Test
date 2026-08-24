@@ -91,7 +91,27 @@ def test_summary_buckets(client):
     assert [t["title"] for t in summary["today_tasks"]] == ["오늘 할일"]
     assert [t["title"] for t in summary["someday_tasks"]] == ["나중에"]
     assert [e["title"] for e in summary["week_events"]] == ["주중 일정"]
-    assert summary["counts"] == {"overdue": 1, "today_tasks": 1, "today_events": 1, "shopping": 1}
+    assert summary["counts"] == {
+        "overdue": 1,
+        "today_tasks": 1,
+        "today_events": 1,
+        "shopping": 1,
+        "done_today": 0,
+    }
+
+
+def test_summary_counts_today_progress(client):
+    today = app_today(client).isoformat()
+    first = client.post("/api/tasks", json={"title": "설거지", "due_date": today}).json()
+    client.post("/api/tasks", json={"title": "빨래", "due_date": today})
+
+    client.patch(f"/api/tasks/{first['id']}", json={"done": True})
+
+    summary = client.get("/api/summary").json()
+    # 완료한 할일은 오늘 목록에서 빠지고 진행률 계산용으로 따로 잡힙니다.
+    assert summary["counts"]["today_tasks"] == 1
+    assert summary["counts"]["done_today"] == 1
+    assert [t["title"] for t in summary["done_today_tasks"]] == ["설거지"]
 
 
 def test_missing_item_returns_404(client):

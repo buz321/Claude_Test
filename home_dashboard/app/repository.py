@@ -265,6 +265,12 @@ def summary(conn: sqlite3.Connection, today: date, week_days: int = 7) -> dict[s
     shopping = _rows(
         conn.execute("SELECT * FROM shopping_items WHERE bought = 0 ORDER BY urgent DESC, id")
     )
+    done_today = _rows(
+        conn.execute(
+            "SELECT * FROM tasks WHERE done = 1 AND due_date = ? ORDER BY completed_at DESC",
+            (today_str,),
+        )
+    )
 
     return {
         "today": today_str,
@@ -275,11 +281,13 @@ def summary(conn: sqlite3.Connection, today: date, week_days: int = 7) -> dict[s
         "today_events": today_events,
         "week_events": week_events,
         "shopping": shopping,
+        "done_today_tasks": done_today,
         "counts": {
             "overdue": len(overdue),
             "today_tasks": len(today_tasks),
             "today_events": len(today_events),
             "shopping": len(shopping),
+            "done_today": len(done_today),
         },
     }
 
