@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111418">
+  <title>우리집 대시보드</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>🏠 우리집</h1>
+    <div class="topbar-actions">
+      <span id="today-label" class="muted"></span>
+      <button id="btn-notify" class="ghost" title="지금 요약 알림 보내기">🔔</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="today">오늘</button>
+    <button class="tab" data-tab="tasks">할일</button>
+    <button class="tab" data-tab="shopping">장보기</button>
+    <button class="tab" data-tab="events">일정</button>
+  </nav>
+
+  <main>
+    <!-- 오늘 -->
+    <section id="tab-today" class="panel active">
+      <div class="stats" id="stats"></div>
+      <div id="today-content"></div>
+    </section>
+
+    <!-- 할일 -->
+    <section id="tab-tasks" class="panel">
+      <form id="task-form" class="card form">
+        <input name="title" placeholder="할일 (예: 분리수거 내놓기)" required autocomplete="off">
+        <div class="row">
+          <input name="due_date" type="date">
+          <input name="due_time" type="time">
+        </div>
+        <div class="row">
+          <input name="assignee" placeholder="담당 (선택)" autocomplete="off">
+          <select name="repeat">
+            <option value="none">반복 없음</option>
+            <option value="daily">매일</option>
+            <option value="weekly">매주</option>
+            <option value="monthly">매월</option>
+          </select>
+        </div>
+        <button type="submit">할일 추가</button>
+      </form>
+      <label class="toggle"><input type="checkbox" id="show-done"> 완료한 항목 보기</label>
+      <div id="task-list"></div>
+    </section>
+
+    <!-- 장보기 -->
+    <section id="tab-shopping" class="panel">
+      <form id="shopping-form" class="card form">
+        <input name="name" placeholder="살 것 (예: 우유)" required autocomplete="off">
+        <div class="row">
+          <input name="quantity" placeholder="수량 (선택)" autocomplete="off">
+          <label class="toggle"><input type="checkbox" name="urgent"> 급함</label>
+        </div>
+        <button type="submit">목록에 추가</button>
+      </form>
+      <div id="shopping-list"></div>
+      <button id="btn-clear-bought" class="ghost wide">산 것 목록에서 비우기</button>
+    </section>
+
+    <!-- 일정 -->
+    <section id="tab-events" class="panel">
+      <form id="event-form" class="card form">
+        <input name="title" placeholder="일정 (예: 아빠 생일)" required autocomplete="off">
+        <div class="row">
+          <input name="date" type="date" required>
+          <input name="start_time" type="time">
+        </div>
+        <input name="location" placeholder="장소 (선택)" autocomplete="off">
+        <button type="submit">일정 추가</button>
+      </form>
+      <div id="event-list"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

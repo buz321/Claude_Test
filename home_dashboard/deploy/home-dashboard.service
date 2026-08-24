@@ -1,0 +1,23 @@
+# /etc/systemd/system/home-dashboard.service
+# 설치: sudo cp deploy/home-dashboard.service /etc/systemd/system/
+#       sudo systemctl enable --now home-dashboard
+[Unit]
+Description=집안 대시보드 (home-dashboard)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/home_dashboard
+EnvironmentFile=/home/pi/home_dashboard/.env
+ExecStart=/home/pi/home_dashboard/.venv/bin/home-dashboard
+Restart=always
+RestartSec=5
+# SQLite 파일이 있는 디렉터리만 쓰기 허용
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "home-dashboard"
+version = "0.1.0"
+description = "라즈베리파이 로컬 서버용 집안 대시보드 (할일/장보기/일정 + 핸드폰 알림)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "buz321" }]
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "apscheduler>=3.10",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+home-dashboard = "app.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

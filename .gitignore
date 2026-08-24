@@ -26,3 +26,9 @@ htmlcov/
 
 # OS
 .DS_Store
+
+# home_dashboard 로컬 데이터/설정
+home_dashboard/*.db
+home_dashboard/*.db-wal
+home_dashboard/*.db-shm
+home_dashboard/.env
