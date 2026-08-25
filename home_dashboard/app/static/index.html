@@ -2,20 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-  <meta name="theme-color" content="#12141c">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>우리집</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="집안일 · 장보기 · 일정을 가족이 함께 보는 우리집 대시보드">
+  <title>우리집 대시보드</title>
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
-  <!-- Pretendard: 인터넷이 없으면 시스템 글꼴로 자동 대체됩니다. -->
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <!-- 아이콘 스프라이트 (선화 아이콘 한 벌) -->
   <svg class="sprite" aria-hidden="true" focusable="false">
     <symbol id="ic-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.2v-5.6H9.2V20H5a1 1 0 0 1-1-1z"/></symbol>
     <symbol id="ic-tasks" viewBox="0 0 24 24"><path d="M4 7.4 5.6 9 8.6 6M4 15.4 5.6 17l3-3M12 7.5h8M12 15.5h8"/></symbol>
@@ -37,63 +34,85 @@
     <symbol id="ic-inbox" viewBox="0 0 24 24"><path d="M4 13.6 6.6 5h10.8L20 13.6V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13.6h4.2l1 2.6h5.6l1-2.6H20"/></symbol>
     <symbol id="ic-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M8.2 12.2 11 15l5-5.4"/></symbol>
     <symbol id="ic-sofa" viewBox="0 0 24 24"><path d="M4.5 11V8.2a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2V11"/><path d="M3 13.4a2 2 0 0 1 4 0v2.2h10v-2.2a2 2 0 0 1 4 0V19H3z"/></symbol>
+    <symbol id="ic-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
   </svg>
 
   <div class="ptr" id="ptr"><span class="ptr-ring"></span></div>
 
-  <header class="hero" id="hero">
-    <div class="hero-veil"></div>
-    <div class="hero-inner">
-      <div class="hero-row">
-        <div>
-          <p class="eyebrow" id="greet">안녕하세요</p>
-          <h1 class="hero-date" id="hero-date">—</h1>
-        </div>
-        <div class="hero-btns">
-          <button class="icon-btn" id="btn-theme" aria-label="테마 바꾸기">
-            <svg class="ic"><use href="#ic-moon" id="theme-icon"/></svg>
-          </button>
-          <button class="icon-btn" id="btn-notify" aria-label="요약 알림 보내기">
-            <svg class="ic" id="bell"><use href="#ic-bell"/></svg>
-          </button>
-        </div>
+  <!-- 사이트 헤더 -->
+  <header class="topbar">
+    <div class="bar">
+      <div class="brand">
+        <span class="mark"><svg class="ic"><use href="#ic-home"/></svg></span>
+        <span class="wordmark">우리집</span>
       </div>
 
-      <div class="progress">
-        <div class="progress-main">
-        <div class="ring-wrap">
-          <svg class="ring" viewBox="0 0 72 72" aria-hidden="true">
-            <circle class="ring-bg" cx="36" cy="36" r="31"></circle>
-            <circle class="ring-fg" id="ring-fg" cx="36" cy="36" r="31"></circle>
-          </svg>
-          <span class="ring-pct num" id="ring-pct">0%</span>
-        </div>
-        <div class="progress-text">
-          <strong id="progress-head">오늘의 집안일</strong>
-          <span id="progress-sub">불러오는 중</span>
-        </div>
-        </div>
-        <div class="chips" id="hero-chips"></div>
+      <nav class="nav" id="nav" aria-label="주요 메뉴">
+        <button class="nav-item active" data-tab="today"><svg class="ic"><use href="#ic-home"/></svg><span>오늘</span></button>
+        <button class="nav-item" data-tab="tasks"><svg class="ic"><use href="#ic-tasks"/></svg><span>할일</span><i class="dot" id="dot-tasks"></i></button>
+        <button class="nav-item" data-tab="shopping"><svg class="ic"><use href="#ic-cart"/></svg><span>장보기</span><i class="dot" id="dot-shopping"></i></button>
+        <button class="nav-item" data-tab="events"><svg class="ic"><use href="#ic-calendar"/></svg><span>일정</span></button>
+      </nav>
+
+      <div class="bar-actions">
+        <span class="datestamp num" id="top-date">—</span>
+        <button class="ghost-btn" id="btn-theme" aria-label="테마 바꾸기">
+          <svg class="ic"><use href="#ic-moon" id="theme-icon"/></svg>
+        </button>
+        <button class="primary-btn" id="btn-add">
+          <svg class="ic"><use href="#ic-plus"/></svg><span>추가</span>
+        </button>
       </div>
     </div>
   </header>
 
-  <main id="main">
-    <section class="view active" id="view-today"></section>
-    <section class="view" id="view-tasks"></section>
-    <section class="view" id="view-shopping"></section>
-    <section class="view" id="view-events"></section>
-  </main>
+  <div class="page">
+    <main class="content" id="main">
+      <section class="view active" id="view-today"></section>
+      <section class="view" id="view-tasks"></section>
+      <section class="view" id="view-shopping"></section>
+      <section class="view" id="view-events"></section>
+    </main>
 
-  <button class="fab" id="fab" aria-label="새로 추가"><svg class="ic"><use href="#ic-plus"/></svg></button>
+    <!-- 사이드바 -->
+    <aside class="rail">
+      <section class="panel">
+        <p class="eyebrow" id="greet">안녕하세요</p>
+        <div class="progress-main">
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 72 72" aria-hidden="true">
+              <circle class="ring-bg" cx="36" cy="36" r="31"></circle>
+              <circle class="ring-fg" id="ring-fg" cx="36" cy="36" r="31"></circle>
+            </svg>
+            <span class="ring-pct num" id="ring-pct">0%</span>
+          </div>
+          <div class="progress-text">
+            <strong id="progress-head">오늘의 집안일</strong>
+            <span id="progress-sub">불러오는 중</span>
+          </div>
+        </div>
+        <div class="chips" id="hero-chips"></div>
+      </section>
 
-  <nav class="tabbar" id="tabbar">
-    <button class="tab active" data-tab="today"><svg class="ic"><use href="#ic-home"/></svg><span>오늘</span></button>
-    <button class="tab" data-tab="tasks"><svg class="ic"><use href="#ic-tasks"/></svg><span>할일</span><i class="dot" id="dot-tasks"></i></button>
-    <button class="tab" data-tab="shopping"><svg class="ic"><use href="#ic-cart"/></svg><span>장보기</span><i class="dot" id="dot-shopping"></i></button>
-    <button class="tab" data-tab="events"><svg class="ic"><use href="#ic-calendar"/></svg><span>일정</span></button>
-    <span class="tab-ink" id="tab-ink"></span>
-  </nav>
+      <section class="panel notify-panel">
+        <h3 class="panel-title">알림</h3>
+        <p class="panel-text" id="notify-desc">매일 아침 요약과 마감·일정 알림을 폰으로 보냅니다.</p>
+        <button class="wide-btn" id="btn-notify">
+          <svg class="ic" id="bell"><use href="#ic-bell"/></svg><span>지금 요약 보내기</span>
+        </button>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <span>우리집 대시보드</span>
+    <span class="sep">·</span>
+    <span>라즈베리파이 로컬 서버</span>
+    <span class="sep">·</span>
+    <span>알림 <b id="foot-notifier">—</b></span>
+    <span class="sep">·</span>
+    <a href="/docs" target="_blank" rel="noopener">API 문서</a>
+  </footer>
 
   <div class="backdrop" id="backdrop"></div>
   <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>

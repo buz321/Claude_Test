@@ -168,6 +168,27 @@ function swipeWrap(inner, kind, id, index) {
     <div class="swipe-bg">${icon("trash")}</div>${inner}</div>`;
 }
 
+/** 마우스 환경에서 행에 올렸을 때 나오는 버튼 (터치에서는 밀어서 삭제) */
+function rowTools(kind, id) {
+  return `<div class="row-tools">
+    <button class="del" data-act="del" data-kind="${kind}" data-id="${id}"
+            title="삭제" aria-label="삭제">${icon("trash")}</button>
+  </div>`;
+}
+
+/** 한 줄 입력으로 바로 추가하는 바 */
+function quickAdd(kind, placeholder) {
+  return `<div class="quickadd">
+    <input id="qa-input" data-kind="${kind}" placeholder="${placeholder}" autocomplete="off">
+    <button data-act="quickadd">추가</button>
+  </div>`;
+}
+
+/** 섹션 하나(제목+목록)를 감싸는 블록 — 넓은 화면에서 2단으로 흐릅니다 */
+function block(inner) {
+  return `<section class="block">${inner}</section>`;
+}
+
 /** 행들을 카드 하나로 묶습니다 (헤어라인으로 구분) */
 function group(rows) {
   return `<div class="group">${rows.join("")}</div>`;
@@ -184,13 +205,14 @@ function taskRow(task, index, options = {}) {
 
   const inner = `
     <div class="row ${task.done ? "done" : ""} ${overdue ? "overdue" : ""}">
-      <span class="rail"></span>
+      <span class="rail-mark"></span>
       ${checkbox("tasks", task.id, !!task.done)}
       <div class="body" data-act="edit" data-kind="tasks" data-id="${task.id}">
         <span class="title-wrap"><span class="title">${esc(task.title)}</span></span>
         ${overdue ? '<span class="tag red">지남</span>' : ""}
         ${metaLine(meta)}
       </div>
+      ${rowTools("tasks", task.id)}
     </div>`;
   return swipeWrap(inner, "tasks", task.id, index);
 }
@@ -213,6 +235,7 @@ function eventRow(event, index, options = {}) {
         ${dayDiff(event.date) === 0 ? '<span class="tag">오늘</span>' : ""}
         ${metaLine(meta)}
       </div>
+      ${rowTools("events", event.id)}
     </div>`;
   return swipeWrap(inner, "events", event.id, index);
 }
@@ -224,13 +247,14 @@ function shoppingRow(item, index) {
 
   const inner = `
     <div class="row ${item.bought ? "done" : ""} ${item.urgent && !item.bought ? "urgent" : ""}">
-      <span class="rail"></span>
+      <span class="rail-mark"></span>
       ${checkbox("shopping", item.id, !!item.bought)}
       <div class="body" data-act="edit" data-kind="shopping" data-id="${item.id}">
         <span class="title-wrap"><span class="title">${esc(item.name)}</span></span>
         ${item.urgent && !item.bought ? '<span class="tag warn">급함</span>' : ""}
         ${metaLine(meta)}
       </div>
+      ${rowTools("shopping", item.id)}
     </div>`;
   return swipeWrap(inner, "shopping", item.id, index);
 }
@@ -261,12 +285,15 @@ function renderHero() {
     hour < 22 ? "오늘도 수고했어요" : "편안한 밤 되세요";
 
   const date = new Date(data.today + "T00:00:00");
-  $("#hero-date").textContent =
-    `${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[(date.getDay() + 6) % 7]}요일`;
+  $("#top-date").textContent =
+    `${date.getMonth() + 1}월 ${date.getDate()}일 (${WEEKDAYS[(date.getDay() + 6) % 7]})`;
 
   const total = counts.today_tasks + counts.done_today;
   const percent = total ? Math.round((counts.done_today / total) * 100) : 0;
-  $("#ring-fg").style.strokeDashoffset = RING_LENGTH * (1 - percent / 100);
+  const ring = $("#ring-fg");
+  ring.style.strokeDashoffset = RING_LENGTH * (1 - percent / 100);
+  // 0% 일 때 둥근 끝처리가 점으로 보이는 것을 막습니다.
+  ring.style.strokeLinecap = percent ? "round" : "butt";
   countUp($("#ring-pct"), percent);
 
   $("#progress-head").textContent = total ? `할일 ${counts.done_today} / ${total} 완료` : "오늘 할일 없음";
@@ -304,42 +331,40 @@ function renderToday() {
   let index = 0;
 
   if (data.overdue_tasks.length) {
-    html += sectionHead("지난 할일", data.overdue_tasks.length, true);
-    html += group(data.overdue_tasks.map((task) => taskRow(task, index++)));
+    html += block(sectionHead("지난 할일", data.overdue_tasks.length, true)
+      + group(data.overdue_tasks.map((task) => taskRow(task, index++))));
   }
 
-  html += sectionHead("오늘 할일", data.today_tasks.length);
-  html += data.today_tasks.length
+  html += block(sectionHead("오늘 할일", data.today_tasks.length) + (data.today_tasks.length
     ? group(data.today_tasks.map((task) => taskRow(task, index++, { showDate: false })))
     : emptyBox(data.counts.done_today ? "check-circle" : "inbox",
-               data.counts.done_today ? "오늘 할일을 모두 끝냈어요" : "오늘 등록된 할일이 없어요");
+               data.counts.done_today ? "오늘 할일을 모두 끝냈어요" : "오늘 등록된 할일이 없어요")));
 
-  html += sectionHead("오늘 일정", data.today_events.length);
-  html += data.today_events.length
+  html += block(sectionHead("오늘 일정", data.today_events.length) + (data.today_events.length
     ? group(data.today_events.map((event) => eventRow(event, index++, { showDate: false })))
-    : emptyBox("sofa", "오늘은 일정이 없어요");
+    : emptyBox("sofa", "오늘은 일정이 없어요")));
 
   if (data.week_events.length) {
-    html += sectionHead("다가오는 일정", data.week_events.length);
-    html += group(data.week_events.slice(0, 5).map((event) => eventRow(event, index++)));
+    html += block(sectionHead("다가오는 일정", data.week_events.length)
+      + group(data.week_events.slice(0, 5).map((event) => eventRow(event, index++))));
   }
 
   if (data.shopping.length) {
-    html += sectionHead("살 것", data.shopping.length);
-    html += group(data.shopping.slice(0, 5).map((item) => shoppingRow(item, index++)));
-    if (data.shopping.length > 5) {
-      html += `<button class="linkbtn" data-act="goto" data-tab="shopping">장보기 ${data.shopping.length}개 전체 보기</button>`;
-    }
+    const more = data.shopping.length > 5
+      ? `<button class="linkbtn" data-act="goto" data-tab="shopping">장보기 ${data.shopping.length}개 전체 보기</button>`
+      : "";
+    html += block(sectionHead("살 것", data.shopping.length)
+      + group(data.shopping.slice(0, 5).map((item) => shoppingRow(item, index++))) + more);
   }
 
   if (data.upcoming_tasks.length) {
-    html += sectionHead("이번 주 할일", data.upcoming_tasks.length);
-    html += group(data.upcoming_tasks.slice(0, 5).map((task) => taskRow(task, index++)));
+    html += block(sectionHead("이번 주 할일", data.upcoming_tasks.length)
+      + group(data.upcoming_tasks.slice(0, 5).map((task) => taskRow(task, index++))));
   }
 
   if (data.someday_tasks.length) {
-    html += sectionHead("언젠가 할일", data.someday_tasks.length);
-    html += group(data.someday_tasks.slice(0, 5).map((task) => taskRow(task, index++)));
+    html += block(sectionHead("언젠가 할일", data.someday_tasks.length)
+      + group(data.someday_tasks.slice(0, 5).map((task) => taskRow(task, index++))));
   }
 
   $("#view-today").innerHTML = html;
@@ -361,7 +386,8 @@ function renderTasks() {
     return true;
   });
 
-  $("#view-tasks").innerHTML = segment + (list.length
+  const quick = quickAdd("tasks", "할일을 입력하고 Enter — 예: 화장실 청소");
+  $("#view-tasks").innerHTML = quick + segment + (list.length
     ? group(list.map((task, index) => taskRow(task, index)))
     : emptyBox("inbox", state.taskFilter === "done" ? "완료한 할일이 없어요" : "할일이 없어요"));
 }
@@ -370,7 +396,8 @@ function renderShopping() {
   const toBuy = state.shopping.filter((item) => !item.bought);
   const bought = state.shopping.filter((item) => item.bought);
 
-  let html = sectionHead("살 것", toBuy.length);
+  let html = quickAdd("shopping", "살 것을 입력하고 Enter — 예: 우유");
+  html += sectionHead("살 것", toBuy.length);
   html += toBuy.length
     ? group(toBuy.map((item, index) => shoppingRow(item, index)))
     : emptyBox("cart", "장보기 목록이 비었어요");
@@ -397,8 +424,8 @@ function renderEvents() {
   let html = "";
   let index = 0;
   groups.forEach((events, date) => {
-    html += sectionHead(dayLabel(date), events.length, dayDiff(date) === 0);
-    html += group(events.map((event) => eventRow(event, index++, { showDate: false })));
+    html += block(sectionHead(dayLabel(date), events.length, dayDiff(date) === 0)
+      + group(events.map((event) => eventRow(event, index++, { showDate: false }))));
   });
   $("#view-events").innerHTML = html;
 }
@@ -437,27 +464,18 @@ async function refresh(options) {
 }
 
 /* ------------------------------------------------------------------ 탭 이동 */
-function moveInk() {
-  const active = document.querySelector(".tab.active");
-  const ink = $("#tab-ink");
-  const rect = active.getBoundingClientRect();
-  const parent = active.parentElement.getBoundingClientRect();
-  ink.style.transform = `translateX(${rect.left - parent.left + rect.width / 2 - 14}px)`;
-}
-
 function switchTab(tab) {
   if (tab === state.tab) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
   state.tab = tab;
-  document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el.dataset.tab === tab));
+  document.querySelectorAll(".nav-item").forEach((el) => el.classList.toggle("active", el.dataset.tab === tab));
   document.querySelectorAll(".view").forEach((el) => el.classList.toggle("active", el.id === "view-" + tab));
-  moveInk();
   buzz();
   load(tab);
 }
 
-$("#tabbar").addEventListener("click", (event) => {
-  const tab = event.target.closest(".tab");
-  if (tab) switchTab(tab.dataset.tab);
+$("#nav").addEventListener("click", (event) => {
+  const item = event.target.closest(".nav-item");
+  if (item) switchTab(item.dataset.tab);
 });
 
 /* ------------------------------------------------------------ 항목 조작/스와이프 */
@@ -521,6 +539,9 @@ $("#main").addEventListener("click", (event) => {
 
   if (act === "toggle") toggleItem(kind, Number(id), target);
   else if (act === "edit") openSheet(kind, Number(id));
+  else if (act === "del") {
+    deleteItem(kind, Number(id), target.closest(".swipe"));
+  } else if (act === "quickadd") submitQuickAdd();
   else if (act === "filter") { state.taskFilter = target.dataset.filter; renderTasks(); buzz(); }
   else if (act === "goto") switchTab(target.dataset.tab);
   else if (act === "clear-bought") {
@@ -528,6 +549,28 @@ $("#main").addEventListener("click", (event) => {
       toast(`${result.deleted}개 정리했어요`);
       refresh({ silent: true });
     });
+  }
+});
+
+async function submitQuickAdd() {
+  const input = $("#qa-input");
+  if (!input) return;
+  const value = input.value.trim();
+  if (!value) { input.focus(); return; }
+  const kind = input.dataset.kind;
+  const payload = kind === "shopping" ? { name: value } : { title: value };
+  await api(`/api/${kind}`, { method: "POST", body: JSON.stringify(payload) });
+  input.value = "";
+  toast("추가했어요");
+  await refresh({ silent: true });
+  const next = $("#qa-input");
+  if (next) next.focus();
+}
+
+$("#main").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && event.target.id === "qa-input") {
+    event.preventDefault();
+    submitQuickAdd();
   }
 });
 
@@ -581,7 +624,6 @@ let sheetSubmit = null;
 function closeSheet() {
   sheet.classList.remove("on");
   backdrop.classList.remove("on");
-  $("#fab").classList.remove("hidden");
   sheetSubmit = null;
 }
 
@@ -692,6 +734,7 @@ async function openSheet(kind, id = null) {
 
   sheet.innerHTML = `
     <div class="grip"></div>
+    <button class="sheet-close" id="f-close" aria-label="닫기">${icon("close")}</button>
     <h2>${form.title}</h2>
     <p class="hint">${esc(form.hint)}</p>
     ${form.body}
@@ -700,7 +743,6 @@ async function openSheet(kind, id = null) {
 
   sheet.classList.add("on");
   backdrop.classList.add("on");
-  $("#fab").classList.add("hidden");
   sheet.scrollTop = 0;
   buzz();
   setTimeout(() => { if (!item) $("#f-title").focus(); }, 320);
@@ -721,6 +763,7 @@ async function openSheet(kind, id = null) {
   };
 
   $("#f-submit").addEventListener("click", () => sheetSubmit && sheetSubmit());
+  $("#f-close").addEventListener("click", closeSheet);
   if (item) {
     $("#f-delete").addEventListener("click", async () => {
       closeSheet();
@@ -760,7 +803,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeSheet();
 });
 
-$("#fab").addEventListener("click", () => {
+$("#btn-add").addEventListener("click", () => {
   openSheet(state.tab === "today" ? "tasks" : state.tab);
 });
 
@@ -808,11 +851,23 @@ document.addEventListener("touchend", async () => {
   ptr.style.opacity = 0;
 });
 
+/* ---------------------------------------------------------------- 서버 정보 */
+async function loadServerInfo() {
+  try {
+    const health = await api("/api/health");
+    const label = { ntfy: "ntfy", telegram: "텔레그램", console: "미설정(로그만)" }[health.notifier]
+      || health.notifier;
+    $("#foot-notifier").textContent = label;
+    if (health.notifier === "console") {
+      $("#notify-desc").textContent =
+        "알림 채널이 아직 설정되지 않았어요. .env 에서 ntfy 또는 텔레그램을 설정하세요.";
+    }
+  } catch { /* 서버 정보는 없어도 화면은 동작합니다 */ }
+}
+
 /* -------------------------------------------------------------------- 시작 */
 initTheme();
-moveInk();
-window.addEventListener("resize", moveInk);
-
+loadServerInfo();
 load("today").catch(() => {
   $("#view-today").innerHTML = emptyBox("alert", "서버에 연결하지 못했어요");
 });
