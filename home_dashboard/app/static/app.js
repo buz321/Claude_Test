@@ -6,7 +6,7 @@
  * ========================================================================= */
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
-const RING_LENGTH = 213.63;               // 2πr (r=34)
+const RING_LENGTH = 194.78;               // 2πr (r=31, style.css 와 일치)
 const FREQUENT = ["우유", "계란", "휴지", "쌀", "세제", "물", "빵", "과일"];
 const REPEAT_LABEL = { none: "", daily: "매일", weekly: "매주", monthly: "매월" };
 
@@ -119,7 +119,7 @@ function hideToast() {
 /* ------------------------------------------------------------------ 테마 */
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  $("#theme-icon").textContent = theme === "dark" ? "☀" : "☾";
+  $("#theme-icon").setAttribute("href", theme === "dark" ? "#ic-sun" : "#ic-moon");
   const color = theme === "dark" ? "#0e1116" : "#4b6ef5";
   document.querySelector('meta[name="theme-color"]').setAttribute("content", color);
 }
@@ -135,90 +135,113 @@ $("#btn-theme").addEventListener("click", () => {
   const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
   applyTheme(next);
   try { localStorage.setItem("theme", next); } catch { /* 무시 */ }
-  $("#theme-icon").classList.add("spin");
-  setTimeout(() => $("#theme-icon").classList.remove("spin"), 460);
+  $("#btn-theme").classList.add("turn");
+  setTimeout(() => $("#btn-theme").classList.remove("turn"), 480);
   buzz();
 });
 
 /* --------------------------------------------------------------- 렌더 조각 */
+function icon(name, extra = "") {
+  return `<svg class="ic ${extra}" aria-hidden="true"><use href="#ic-${name}"/></svg>`;
+}
+
 function stagger(index) {
-  return reduceMotion ? "" : ` style="animation-delay:${Math.min(index * 45, 400)}ms"`;
+  return reduceMotion ? "" : ` style="animation-delay:${Math.min(index * 32, 260)}ms"`;
+}
+
+function metaLine(parts) {
+  if (!parts.length) return "";
+  const html = parts
+    .map(([name, text]) => `<span>${name ? icon(name, "ic-sm") : ""}${esc(text)}</span>`)
+    .join("");
+  return `<div class="meta">${html}</div>`;
 }
 
 function checkbox(kind, id, checked) {
   return `<span class="check ${checked ? "on" : ""}" data-act="toggle" data-kind="${kind}" data-id="${id}">
-    <svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg></span>`;
+    ${icon("check")}</span>`;
 }
 
+/** 스와이프 삭제 배경 + 행을 감싸는 래퍼 */
 function swipeWrap(inner, kind, id, index) {
   return `<div class="swipe" data-kind="${kind}" data-id="${id}"${stagger(index)}>
-    <div class="swipe-bg">삭제</div>${inner}</div>`;
+    <div class="swipe-bg">${icon("trash")}</div>${inner}</div>`;
 }
 
-function taskCard(task, index, options = {}) {
+/** 행들을 카드 하나로 묶습니다 (헤어라인으로 구분) */
+function group(rows) {
+  return `<div class="group">${rows.join("")}</div>`;
+}
+
+function taskRow(task, index, options = {}) {
   const overdue = !task.done && task.due_date && dayDiff(task.due_date) < 0;
   const meta = [];
-  if (task.due_date && options.showDate !== false) meta.push(dayLabel(task.due_date));
-  if (task.due_time) meta.push("⏰ " + fmtTime(task.due_time));
-  if (task.assignee) meta.push("👤 " + task.assignee);
-  if (REPEAT_LABEL[task.repeat]) meta.push("🔁 " + REPEAT_LABEL[task.repeat]);
-  if (task.note) meta.push(task.note);
+  if (task.due_date && options.showDate !== false) meta.push([null, dayLabel(task.due_date)]);
+  if (task.due_time) meta.push(["clock", fmtTime(task.due_time)]);
+  if (task.assignee) meta.push(["user", task.assignee]);
+  if (REPEAT_LABEL[task.repeat]) meta.push(["repeat", REPEAT_LABEL[task.repeat]]);
+  if (task.note) meta.push(["note", task.note]);
 
   const inner = `
-    <div class="item ${task.done ? "done" : ""} ${overdue ? "overdue" : ""}">
+    <div class="row ${task.done ? "done" : ""} ${overdue ? "overdue" : ""}">
+      <span class="rail"></span>
       ${checkbox("tasks", task.id, !!task.done)}
       <div class="body" data-act="edit" data-kind="tasks" data-id="${task.id}">
-        <span class="title">${esc(task.title)}</span>
-        ${overdue ? ' <span class="pill red">지남</span>' : ""}
-        ${meta.length ? `<div class="meta"><span>${meta.map(esc).join("</span><span>")}</span></div>` : ""}
+        <span class="title-wrap"><span class="title">${esc(task.title)}</span></span>
+        ${overdue ? '<span class="tag red">지남</span>' : ""}
+        ${metaLine(meta)}
       </div>
     </div>`;
   return swipeWrap(inner, "tasks", task.id, index);
 }
 
-function eventCard(event, index, options = {}) {
+function eventRow(event, index, options = {}) {
   const time = event.start_time ? ampm(event.start_time) : null;
   const meta = [];
-  if (options.showDate !== false) meta.push(dayLabel(event.date));
-  if (event.end_time) meta.push("~ " + fmtTime(event.end_time));
-  if (event.location) meta.push("📍 " + event.location);
-  if (event.note) meta.push(event.note);
+  if (options.showDate !== false) meta.push([null, dayLabel(event.date)]);
+  if (event.end_time) meta.push(["clock", "~ " + fmtTime(event.end_time)]);
+  if (event.location) meta.push(["pin", event.location]);
+  if (event.note) meta.push(["note", event.note]);
 
   const inner = `
-    <div class="item">
-      ${time
-        ? `<span class="time-badge"><small>${time.label}</small>${time.text}</span>`
-        : `<span class="time-badge"><small>하루</small>종일</span>`}
+    <div class="row">
+      <span class="when num">${time
+        ? `<b>${time.text}</b><small>${time.label}</small>`
+        : "<b>—</b><small>종일</small>"}</span>
       <div class="body" data-act="edit" data-kind="events" data-id="${event.id}">
         <span class="title">${esc(event.title)}</span>
-        ${dayDiff(event.date) === 0 ? ' <span class="pill">오늘</span>' : ""}
-        ${meta.length ? `<div class="meta"><span>${meta.map(esc).join("</span><span>")}</span></div>` : ""}
+        ${dayDiff(event.date) === 0 ? '<span class="tag">오늘</span>' : ""}
+        ${metaLine(meta)}
       </div>
     </div>`;
   return swipeWrap(inner, "events", event.id, index);
 }
 
-function shoppingCard(item, index) {
-  const meta = [item.quantity, item.note].filter(Boolean);
+function shoppingRow(item, index) {
+  const meta = [];
+  if (item.quantity) meta.push([null, item.quantity]);
+  if (item.note) meta.push(["note", item.note]);
+
   const inner = `
-    <div class="item ${item.bought ? "done" : ""} ${item.urgent && !item.bought ? "urgent" : ""}">
+    <div class="row ${item.bought ? "done" : ""} ${item.urgent && !item.bought ? "urgent" : ""}">
+      <span class="rail"></span>
       ${checkbox("shopping", item.id, !!item.bought)}
       <div class="body" data-act="edit" data-kind="shopping" data-id="${item.id}">
-        <span class="title">${esc(item.name)}</span>
-        ${item.urgent && !item.bought ? ' <span class="pill warn">급함</span>' : ""}
-        ${meta.length ? `<div class="meta"><span>${meta.map(esc).join("</span><span>")}</span></div>` : ""}
+        <span class="title-wrap"><span class="title">${esc(item.name)}</span></span>
+        ${item.urgent && !item.bought ? '<span class="tag warn">급함</span>' : ""}
+        ${metaLine(meta)}
       </div>
     </div>`;
   return swipeWrap(inner, "shopping", item.id, index);
 }
 
 function sectionHead(label, count, danger = false) {
-  return `<div class="sec-head ${danger ? "danger" : ""}">${label}
-    ${count ? `<span class="count">${count}</span>` : ""}</div>`;
+  return `<div class="sec-head ${danger ? "danger" : ""}">${esc(label)}
+    ${count ? `<span class="n num">${count}</span>` : ""}</div>`;
 }
 
-function emptyBox(emoji, text) {
-  return `<div class="empty"><span class="big">${emoji}</span>${esc(text)}</div>`;
+function emptyBox(iconName, text) {
+  return `<div class="empty"><span class="badge">${icon(iconName)}</span>${esc(text)}</div>`;
 }
 
 function skeleton(rows = 3) {
@@ -230,13 +253,12 @@ function renderHero() {
   const data = state.summary;
   const counts = data.counts;
   const hour = new Date().getHours();
-  const greet =
-    hour < 5 ? "늦은 밤이에요" :
+  $("#greet").textContent =
+    hour < 5 ? "늦은 밤" :
     hour < 11 ? "좋은 아침이에요" :
     hour < 14 ? "점심 잘 챙기세요" :
     hour < 18 ? "좋은 오후예요" :
     hour < 22 ? "오늘도 수고했어요" : "편안한 밤 되세요";
-  $("#greet").textContent = greet;
 
   const date = new Date(data.today + "T00:00:00");
   $("#hero-date").textContent =
@@ -247,12 +269,10 @@ function renderHero() {
   $("#ring-fg").style.strokeDashoffset = RING_LENGTH * (1 - percent / 100);
   countUp($("#ring-pct"), percent);
 
-  $("#progress-head").textContent = total
-    ? `할일 ${counts.done_today}/${total} 완료`
-    : "오늘 할일 없음";
+  $("#progress-head").textContent = total ? `할일 ${counts.done_today} / ${total} 완료` : "오늘 할일 없음";
   $("#progress-sub").textContent =
     !total ? "여유로운 하루예요" :
-    percent === 100 ? "오늘 할 일 다 끝냈어요 🎉" :
+    percent === 100 ? "오늘 할 일을 모두 끝냈어요" :
     `${counts.today_tasks}개 남았어요`;
 
   const chips = [];
@@ -270,7 +290,7 @@ function countUp(el, target) {
   if (reduceMotion || from === target) { el.textContent = target + "%"; return; }
   const start = performance.now();
   const step = (now) => {
-    const progress = Math.min((now - start) / 700, 1);
+    const progress = Math.min((now - start) / 800, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     el.textContent = Math.round(from + (target - from) * eased) + "%";
     if (progress < 1) requestAnimationFrame(step);
@@ -284,53 +304,49 @@ function renderToday() {
   let index = 0;
 
   if (data.overdue_tasks.length) {
-    html += sectionHead("⚠️ 지난 할일", data.overdue_tasks.length, true);
-    html += data.overdue_tasks.map((task) => taskCard(task, index++)).join("");
+    html += sectionHead("지난 할일", data.overdue_tasks.length, true);
+    html += group(data.overdue_tasks.map((task) => taskRow(task, index++)));
   }
 
-  html += sectionHead("✅ 오늘 할일", data.today_tasks.length);
+  html += sectionHead("오늘 할일", data.today_tasks.length);
   html += data.today_tasks.length
-    ? data.today_tasks.map((task) => taskCard(task, index++, { showDate: false })).join("")
-    : emptyBox("🎉", data.counts.done_today ? "오늘 할일을 모두 끝냈어요!" : "오늘 등록된 할일이 없어요");
+    ? group(data.today_tasks.map((task) => taskRow(task, index++, { showDate: false })))
+    : emptyBox(data.counts.done_today ? "check-circle" : "inbox",
+               data.counts.done_today ? "오늘 할일을 모두 끝냈어요" : "오늘 등록된 할일이 없어요");
 
-  html += sectionHead("📅 오늘 일정", data.today_events.length);
+  html += sectionHead("오늘 일정", data.today_events.length);
   html += data.today_events.length
-    ? data.today_events.map((event) => eventCard(event, index++, { showDate: false })).join("")
-    : emptyBox("🛋", "오늘은 일정이 없어요");
+    ? group(data.today_events.map((event) => eventRow(event, index++, { showDate: false })))
+    : emptyBox("sofa", "오늘은 일정이 없어요");
 
   if (data.week_events.length) {
-    html += sectionHead("🗓 다가오는 일정", data.week_events.length);
-    html += data.week_events.slice(0, 5).map((event) => eventCard(event, index++)).join("");
+    html += sectionHead("다가오는 일정", data.week_events.length);
+    html += group(data.week_events.slice(0, 5).map((event) => eventRow(event, index++)));
   }
 
   if (data.shopping.length) {
-    html += sectionHead("🛒 살 것", data.shopping.length);
-    html += data.shopping.slice(0, 5).map((item) => shoppingCard(item, index++)).join("");
+    html += sectionHead("살 것", data.shopping.length);
+    html += group(data.shopping.slice(0, 5).map((item) => shoppingRow(item, index++)));
     if (data.shopping.length > 5) {
       html += `<button class="linkbtn" data-act="goto" data-tab="shopping">장보기 ${data.shopping.length}개 전체 보기</button>`;
     }
   }
 
   if (data.upcoming_tasks.length) {
-    html += sectionHead("📌 이번 주 할일", data.upcoming_tasks.length);
-    html += data.upcoming_tasks.slice(0, 5).map((task) => taskCard(task, index++)).join("");
+    html += sectionHead("이번 주 할일", data.upcoming_tasks.length);
+    html += group(data.upcoming_tasks.slice(0, 5).map((task) => taskRow(task, index++)));
   }
 
   if (data.someday_tasks.length) {
-    html += sectionHead("🗒 언젠가 할일", data.someday_tasks.length);
-    html += data.someday_tasks.slice(0, 5).map((task) => taskCard(task, index++)).join("");
+    html += sectionHead("언젠가 할일", data.someday_tasks.length);
+    html += group(data.someday_tasks.slice(0, 5).map((task) => taskRow(task, index++)));
   }
 
   $("#view-today").innerHTML = html;
 }
 
 function renderTasks() {
-  const filters = [
-    ["todo", "남은 할일"],
-    ["today", "오늘"],
-    ["overdue", "지남"],
-    ["done", "완료"],
-  ];
+  const filters = [["todo", "남은 할일"], ["today", "오늘"], ["overdue", "지남"], ["done", "완료"]];
   const segment = `<div class="segment">${filters
     .map(([key, label]) => `<button data-act="filter" data-filter="${key}"
       class="${state.taskFilter === key ? "on" : ""}">${label}</button>`)
@@ -346,33 +362,32 @@ function renderTasks() {
   });
 
   $("#view-tasks").innerHTML = segment + (list.length
-    ? list.map((task, index) => taskCard(task, index)).join("")
-    : emptyBox("🧺", state.taskFilter === "done" ? "완료한 할일이 없어요" : "할일이 없어요"));
+    ? group(list.map((task, index) => taskRow(task, index)))
+    : emptyBox("inbox", state.taskFilter === "done" ? "완료한 할일이 없어요" : "할일이 없어요"));
 }
 
 function renderShopping() {
   const toBuy = state.shopping.filter((item) => !item.bought);
   const bought = state.shopping.filter((item) => item.bought);
 
-  let html = sectionHead("🛒 살 것", toBuy.length);
+  let html = sectionHead("살 것", toBuy.length);
   html += toBuy.length
-    ? toBuy.map((item, index) => shoppingCard(item, index)).join("")
-    : emptyBox("✨", "장보기 목록이 비었어요");
+    ? group(toBuy.map((item, index) => shoppingRow(item, index)))
+    : emptyBox("cart", "장보기 목록이 비었어요");
 
   if (bought.length) {
-    html += sectionHead("✔️ 담은 것", bought.length);
-    html += bought.map((item, index) => shoppingCard(item, index)).join("");
-    html += `<button class="linkbtn" data-act="clear-bought">담은 것 ${bought.length}개 목록에서 비우기</button>`;
+    html += sectionHead("담은 것", bought.length);
+    html += group(bought.map((item, index) => shoppingRow(item, index)));
+    html += `<button class="linkbtn danger" data-act="clear-bought">담은 것 ${bought.length}개 비우기</button>`;
   }
   $("#view-shopping").innerHTML = html;
 }
 
 function renderEvents() {
   if (!state.events.length) {
-    $("#view-events").innerHTML = emptyBox("📅", "예정된 일정이 없어요");
+    $("#view-events").innerHTML = emptyBox("calendar", "예정된 일정이 없어요");
     return;
   }
-  // 날짜별로 묶어서 보여줍니다.
   const groups = new Map();
   state.events.forEach((event) => {
     if (!groups.has(event.date)) groups.set(event.date, []);
@@ -383,7 +398,7 @@ function renderEvents() {
   let index = 0;
   groups.forEach((events, date) => {
     html += sectionHead(dayLabel(date), events.length, dayDiff(date) === 0);
-    html += events.map((event) => eventCard(event, index++, { showDate: false })).join("");
+    html += group(events.map((event) => eventRow(event, index++, { showDate: false })));
   });
   $("#view-events").innerHTML = html;
 }
@@ -447,12 +462,12 @@ $("#tabbar").addEventListener("click", (event) => {
 
 /* ------------------------------------------------------------ 항목 조작/스와이프 */
 async function toggleItem(kind, id, element) {
-  const card = element.closest(".item");
+  const card = element.closest(".row");
   const turningOn = !element.classList.contains("on");
   element.classList.toggle("on", turningOn);
   card.classList.toggle("done", turningOn);
   if (turningOn) {
-    card.classList.add("just-done");
+    card.classList.add("flash");
     buzz([10, 40, 14]);
   }
   const field = kind === "tasks" ? "done" : "bought";
@@ -524,7 +539,7 @@ $("#main").addEventListener("pointerdown", (event) => {
   if (event.target.closest("[data-act='toggle']")) return;
   const wrap = event.target.closest(".swipe");
   if (!wrap) return;
-  swipe = { wrap, card: wrap.querySelector(".item"), x: event.clientX, y: event.clientY, dx: 0, axis: null };
+  swipe = { wrap, card: wrap.querySelector(".row"), x: event.clientX, y: event.clientY, dx: 0, axis: null };
 });
 
 $("#main").addEventListener("pointermove", (event) => {
@@ -592,14 +607,14 @@ function sheetForm(kind, item) {
           <input id="f-title" placeholder="예: 분리수거 내놓기" value="${esc(item?.title || "")}" autocomplete="off"></div>
         <div class="field"><label>언제까지</label>
           ${quickRow("date", [[today, "오늘"], [shiftDays(today, 1), "내일"], [shiftDays(today, 7), "다음 주"], ["", "없음"]], item?.due_date ?? "")}
-          <div class="row" style="margin-top:10px">
+          <div class="row2" style="margin-top:10px">
             <input id="f-date" type="date" value="${esc(item?.due_date || "")}">
             <input id="f-time" type="time" value="${esc(item?.due_time || "")}">
           </div></div>
         <div class="field"><label>반복</label>
           ${quickRow("repeat", [["none", "안 함"], ["daily", "매일"], ["weekly", "매주"], ["monthly", "매월"]], item?.repeat || "none")}</div>
         <div class="field"><label>담당 · 메모</label>
-          <div class="row">
+          <div class="row2">
             <input id="f-assignee" placeholder="담당 (선택)" value="${esc(item?.assignee || "")}" autocomplete="off">
             <input id="f-note" placeholder="메모 (선택)" value="${esc(item?.note || "")}" autocomplete="off">
           </div></div>`,
@@ -625,7 +640,7 @@ function sheetForm(kind, item) {
           <div class="quick" data-quick="frequent">${FREQUENT
             .map((name) => `<button type="button" data-value="${name}">${name}</button>`).join("")}</div></div>`}
         <div class="field"><label>수량 · 메모</label>
-          <div class="row">
+          <div class="row2">
             <input id="f-qty" placeholder="예: 2팩" value="${esc(item?.quantity || "")}" autocomplete="off">
             <input id="f-note" placeholder="메모 (선택)" value="${esc(item?.note || "")}" autocomplete="off">
           </div></div>
@@ -648,12 +663,12 @@ function sheetForm(kind, item) {
         <input id="f-title" placeholder="예: 치과 예약" value="${esc(item?.title || "")}" autocomplete="off"></div>
       <div class="field"><label>날짜</label>
         ${quickRow("date", [[today, "오늘"], [shiftDays(today, 1), "내일"], [shiftDays(today, 7), "다음 주"]], item?.date ?? "")}
-        <div class="row" style="margin-top:10px">
+        <div class="row2" style="margin-top:10px">
           <input id="f-date" type="date" value="${esc(item?.date || today)}">
           <input id="f-time" type="time" value="${esc(item?.start_time || "")}">
         </div></div>
       <div class="field"><label>장소 · 메모</label>
-        <div class="row">
+        <div class="row2">
           <input id="f-place" placeholder="장소 (선택)" value="${esc(item?.location || "")}" autocomplete="off">
           <input id="f-note" placeholder="메모 (선택)" value="${esc(item?.note || "")}" autocomplete="off">
         </div></div>`,
@@ -751,8 +766,8 @@ $("#fab").addEventListener("click", () => {
 
 /* ---------------------------------------------------------------- 알림 버튼 */
 $("#btn-notify").addEventListener("click", async () => {
-  $("#bell").classList.add("ring-anim");
-  setTimeout(() => $("#bell").classList.remove("ring-anim"), 720);
+  $("#bell").classList.add("swing");
+  setTimeout(() => $("#bell").classList.remove("swing"), 800);
   buzz([10, 30, 10]);
   const result = await api("/api/notify/digest", { method: "POST" });
   toast(result.sent ? `요약 알림을 보냈어요 (${result.channel})` : "알림 실패 — 설정을 확인하세요");
@@ -799,7 +814,7 @@ moveInk();
 window.addEventListener("resize", moveInk);
 
 load("today").catch(() => {
-  $("#view-today").innerHTML = emptyBox("📡", "서버에 연결하지 못했어요");
+  $("#view-today").innerHTML = emptyBox("alert", "서버에 연결하지 못했어요");
 });
 
 // 화면을 다시 볼 때와 1분마다 자동 갱신 (날짜가 바뀌어도 반영)

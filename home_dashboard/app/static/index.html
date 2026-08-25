@@ -3,49 +3,77 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-  <meta name="theme-color" content="#0e1116">
+  <meta name="theme-color" content="#12141c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>우리집</title>
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
+  <!-- Pretendard: 인터넷이 없으면 시스템 글꼴로 자동 대체됩니다. -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <!-- 당겨서 새로고침 -->
-  <div class="ptr" id="ptr"><div class="ptr-ring"></div></div>
+  <!-- 아이콘 스프라이트 (선화 아이콘 한 벌) -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="ic-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.2v-5.6H9.2V20H5a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="ic-tasks" viewBox="0 0 24 24"><path d="M4 7.4 5.6 9 8.6 6M4 15.4 5.6 17l3-3M12 7.5h8M12 15.5h8"/></symbol>
+    <symbol id="ic-cart" viewBox="0 0 24 24"><path d="M3 4.5h2.2l2.1 10.4h10.2l1.9-7.9H7.5"/><circle cx="9.6" cy="19" r="1.5"/><circle cx="16.8" cy="19" r="1.5"/></symbol>
+    <symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="3"/><path d="M8 3.5v4M16 3.5v4M3.5 10.5h17"/></symbol>
+    <symbol id="ic-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24"><path d="M12 3.8a5.4 5.4 0 0 0-5.4 5.4c0 4.8-2 6.3-2 6.3h14.8s-2-1.5-2-6.3A5.4 5.4 0 0 0 12 3.8z"/><path d="M10.4 18.7a1.9 1.9 0 0 0 3.2 0"/></symbol>
+    <symbol id="ic-moon" viewBox="0 0 24 24"><path d="M20 14.3A8.4 8.4 0 0 1 9.7 4a8.4 8.4 0 1 0 10.3 10.3z"/></symbol>
+    <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.4M12 18.8v2.4M4.5 4.5l1.7 1.7M17.8 17.8l1.7 1.7M2.8 12h2.4M18.8 12h2.4M4.5 19.5l1.7-1.7M17.8 6.2l1.7-1.7"/></symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24"><path d="M5 12.6 9.6 17 19 7.4"/></symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.1 2"/></symbol>
+    <symbol id="ic-repeat" viewBox="0 0 24 24"><path d="M4.5 10.2A5 5 0 0 1 9.5 5.2h9.8M16.4 2.4l3 2.8-3 2.8M19.5 13.8a5 5 0 0 1-5 5H4.7M7.6 21.6l-3-2.8 3-2.8"/></symbol>
+    <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.6"/><path d="M5.4 20a6.8 6.8 0 0 1 13.2 0"/></symbol>
+    <symbol id="ic-pin" viewBox="0 0 24 24"><path d="M12 21.2s6.4-6.2 6.4-10.6a6.4 6.4 0 1 0-12.8 0C5.6 15 12 21.2 12 21.2z"/><circle cx="12" cy="10.4" r="2.4"/></symbol>
+    <symbol id="ic-alert" viewBox="0 0 24 24"><path d="M12 4.2 3.2 19.8h17.6z"/><path d="M12 10v4.2M12 17.4v.2"/></symbol>
+    <symbol id="ic-flame" viewBox="0 0 24 24"><path d="M12 3.2s5.2 3.9 5.2 8.2a5.2 5.2 0 0 1-10.4 0c0-1.7 1-3.1 1-3.1s.4 2 1.9 2c0-3.1 2.3-5.1 2.3-7.1z"/></symbol>
+    <symbol id="ic-note" viewBox="0 0 24 24"><path d="M6 4.5h12v15H6z"/><path d="M9 9h6M9 12.5h6M9 16h3.5"/></symbol>
+    <symbol id="ic-trash" viewBox="0 0 24 24"><path d="M4.6 7h14.8M9.6 7V4.6h4.8V7M6.8 7l.9 13h8.6l.9-13"/></symbol>
+    <symbol id="ic-inbox" viewBox="0 0 24 24"><path d="M4 13.6 6.6 5h10.8L20 13.6V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13.6h4.2l1 2.6h5.6l1-2.6H20"/></symbol>
+    <symbol id="ic-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M8.2 12.2 11 15l5-5.4"/></symbol>
+    <symbol id="ic-sofa" viewBox="0 0 24 24"><path d="M4.5 11V8.2a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2V11"/><path d="M3 13.4a2 2 0 0 1 4 0v2.2h10v-2.2a2 2 0 0 1 4 0V19H3z"/></symbol>
+  </svg>
+
+  <div class="ptr" id="ptr"><span class="ptr-ring"></span></div>
 
   <header class="hero" id="hero">
-    <div class="hero-glow"></div>
+    <div class="hero-veil"></div>
     <div class="hero-inner">
       <div class="hero-row">
-        <div class="hero-title">
-          <p class="greet" id="greet">안녕하세요</p>
-          <h1 id="hero-date">—</h1>
+        <div>
+          <p class="eyebrow" id="greet">안녕하세요</p>
+          <h1 class="hero-date" id="hero-date">—</h1>
         </div>
         <div class="hero-btns">
           <button class="icon-btn" id="btn-theme" aria-label="테마 바꾸기">
-            <span class="icon-swap" id="theme-icon">☾</span>
+            <svg class="ic"><use href="#ic-moon" id="theme-icon"/></svg>
           </button>
-          <button class="icon-btn" id="btn-notify" aria-label="알림 보내기">
-            <span id="bell">🔔</span>
+          <button class="icon-btn" id="btn-notify" aria-label="요약 알림 보내기">
+            <svg class="ic" id="bell"><use href="#ic-bell"/></svg>
           </button>
         </div>
       </div>
 
-      <div class="progress-card" id="progress-card">
+      <div class="progress">
+        <div class="progress-main">
         <div class="ring-wrap">
-          <svg class="ring" viewBox="0 0 80 80" aria-hidden="true">
-            <circle class="ring-bg" cx="40" cy="40" r="34"></circle>
-            <circle class="ring-fg" id="ring-fg" cx="40" cy="40" r="34"></circle>
+          <svg class="ring" viewBox="0 0 72 72" aria-hidden="true">
+            <circle class="ring-bg" cx="36" cy="36" r="31"></circle>
+            <circle class="ring-fg" id="ring-fg" cx="36" cy="36" r="31"></circle>
           </svg>
-          <span class="ring-pct" id="ring-pct">0%</span>
+          <span class="ring-pct num" id="ring-pct">0%</span>
         </div>
         <div class="progress-text">
           <strong id="progress-head">오늘의 집안일</strong>
-          <span id="progress-sub" class="muted">불러오는 중…</span>
-          <div class="chips" id="hero-chips"></div>
+          <span id="progress-sub">불러오는 중</span>
         </div>
+        </div>
+        <div class="chips" id="hero-chips"></div>
       </div>
     </div>
   </header>
@@ -57,29 +85,13 @@
     <section class="view" id="view-events"></section>
   </main>
 
-  <button class="fab" id="fab" aria-label="새로 추가">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-  </button>
+  <button class="fab" id="fab" aria-label="새로 추가"><svg class="ic"><use href="#ic-plus"/></svg></button>
 
   <nav class="tabbar" id="tabbar">
-    <button class="tab active" data-tab="today">
-      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-      <span>오늘</span>
-    </button>
-    <button class="tab" data-tab="tasks">
-      <svg viewBox="0 0 24 24"><path d="M9 11l3 3 7-7"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
-      <span>할일</span>
-      <i class="dot" id="dot-tasks"></i>
-    </button>
-    <button class="tab" data-tab="shopping">
-      <svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M6 6L5 3H2"/></svg>
-      <span>장보기</span>
-      <i class="dot" id="dot-shopping"></i>
-    </button>
-    <button class="tab" data-tab="events">
-      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
-      <span>일정</span>
-    </button>
+    <button class="tab active" data-tab="today"><svg class="ic"><use href="#ic-home"/></svg><span>오늘</span></button>
+    <button class="tab" data-tab="tasks"><svg class="ic"><use href="#ic-tasks"/></svg><span>할일</span><i class="dot" id="dot-tasks"></i></button>
+    <button class="tab" data-tab="shopping"><svg class="ic"><use href="#ic-cart"/></svg><span>장보기</span><i class="dot" id="dot-shopping"></i></button>
+    <button class="tab" data-tab="events"><svg class="ic"><use href="#ic-calendar"/></svg><span>일정</span></button>
     <span class="tab-ink" id="tab-ink"></span>
   </nav>
 
