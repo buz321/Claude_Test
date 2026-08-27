@@ -120,7 +120,7 @@ function hideToast() {
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   $("#theme-icon").setAttribute("href", theme === "dark" ? "#ic-sun" : "#ic-moon");
-  const color = theme === "dark" ? "#0e1116" : "#4b6ef5";
+  const color = theme === "dark" ? "#16110d" : "#faf7f2";
   document.querySelector('meta[name="theme-color"]').setAttribute("content", color);
 }
 
@@ -272,17 +272,76 @@ function skeleton(rows = 3) {
   return Array.from({ length: rows }, () => '<div class="sk"></div>').join("");
 }
 
+/* ------------------------------------------------------------ 배너 · 캐릭터 */
+const PET_NAME = "나비";
+
+/** 지금이 하루 중 언제인지 (배너 색과 캐릭터 기분에 씁니다) */
+function timeOfDay(hour = new Date().getHours()) {
+  if (hour < 5) return "night";
+  if (hour < 8) return "dawn";
+  if (hour < 11) return "morning";
+  if (hour < 17) return "day";
+  if (hour < 21) return "evening";
+  return "night";
+}
+
+function greeting(hour = new Date().getHours()) {
+  return hour < 5 ? "늦은 밤이에요"
+    : hour < 11 ? "좋은 아침이에요"
+    : hour < 14 ? "점심 잘 챙기세요"
+    : hour < 18 ? "좋은 오후예요"
+    : hour < 22 ? "오늘도 수고했어요" : "편안한 밤 되세요";
+}
+
+function bannerHtml(data) {
+  const counts = data.counts;
+  const date = new Date(data.today + "T00:00:00");
+  const parts = [];
+  if (counts.today_tasks) parts.push(`할일 ${counts.today_tasks}개`);
+  if (counts.today_events) parts.push(`일정 ${counts.today_events}개`);
+  if (counts.shopping) parts.push(`살 것 ${counts.shopping}개`);
+
+  return `<div class="banner" data-tod="${timeOfDay()}">
+    <div class="btxt">
+      <p class="beyebrow">${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[(date.getDay() + 6) % 7]}요일</p>
+      <h2>${esc(greeting())}</h2>
+      <p class="bsub">${parts.length ? esc(parts.join(" · ")) : "오늘은 아무 일정도 없어요"}</p>
+    </div>
+    <div class="bpet" id="banner-pet"></div>
+  </div>`;
+}
+
+/** 요약 상태에 맞춰 캐릭터 기분과 한 줄 메시지를 정합니다. */
+function updatePet(data) {
+  const counts = data.counts;
+  const total = counts.today_tasks + counts.done_today;
+  const night = timeOfDay() === "night";
+
+  let mood = "idle";
+  let message = `<b>${PET_NAME}</b>가 오늘도 지켜보고 있어요`;
+
+  if (night) {
+    mood = "sleep";
+    message = `<b>${PET_NAME}</b>는 자는 중이에요<br>내일 아침에 봐요`;
+  } else if (counts.overdue) {
+    mood = "sad";
+    message = `지난 할일이 ${counts.overdue}개 밀렸어요<br><b>${PET_NAME}</b>가 걱정하고 있어요`;
+  } else if (total && counts.today_tasks === 0) {
+    mood = "happy";
+    message = `오늘 할 일 다 끝냈어요<br><b>${PET_NAME}</b>도 기뻐하는 중`;
+  } else if (counts.today_tasks) {
+    message = `${counts.today_tasks}개만 더 하면 오늘 끝!<br><b>${PET_NAME}</b>가 응원하고 있어요`;
+  }
+
+  Pixel.setMood(mood);
+  const say = $("#pet-say");
+  if (say) say.innerHTML = message;
+}
+
 /* -------------------------------------------------------------- 화면 렌더 */
 function renderHero() {
   const data = state.summary;
   const counts = data.counts;
-  const hour = new Date().getHours();
-  $("#greet").textContent =
-    hour < 5 ? "늦은 밤" :
-    hour < 11 ? "좋은 아침이에요" :
-    hour < 14 ? "점심 잘 챙기세요" :
-    hour < 18 ? "좋은 오후예요" :
-    hour < 22 ? "오늘도 수고했어요" : "편안한 밤 되세요";
 
   const date = new Date(data.today + "T00:00:00");
   $("#top-date").textContent =
@@ -310,6 +369,7 @@ function renderHero() {
 
   $("#dot-tasks").classList.toggle("on", counts.overdue > 0);
   $("#dot-shopping").classList.toggle("on", counts.shopping > 0);
+  updatePet(data);
 }
 
 function countUp(el, target) {
@@ -327,7 +387,7 @@ function countUp(el, target) {
 
 function renderToday() {
   const data = state.summary;
-  let html = "";
+  let html = bannerHtml(data);
   let index = 0;
 
   if (data.overdue_tasks.length) {
@@ -368,6 +428,7 @@ function renderToday() {
   }
 
   $("#view-today").innerHTML = html;
+  Pixel.mountPet($("#banner-pet"), 6);   // 다시 그릴 때마다 새로 붙습니다
 }
 
 function renderTasks() {
@@ -487,6 +548,8 @@ async function toggleItem(kind, id, element) {
   if (turningOn) {
     card.classList.add("flash");
     buzz([10, 40, 14]);
+    Pixel.celebrate(element);
+    Pixel.cheer();
   }
   const field = kind === "tasks" ? "done" : "bought";
   await api(`/api/${kind}/${id}`, { method: "PATCH", body: JSON.stringify({ [field]: turningOn }) });
@@ -812,6 +875,7 @@ $("#btn-notify").addEventListener("click", async () => {
   $("#bell").classList.add("swing");
   setTimeout(() => $("#bell").classList.remove("swing"), 800);
   buzz([10, 30, 10]);
+  Pixel.cheer(1500);
   const result = await api("/api/notify/digest", { method: "POST" });
   toast(result.sent ? `요약 알림을 보냈어요 (${result.channel})` : "알림 실패 — 설정을 확인하세요");
 });
@@ -867,6 +931,7 @@ async function loadServerInfo() {
 
 /* -------------------------------------------------------------------- 시작 */
 initTheme();
+Pixel.mountPet($("#pet-slot"), 3);
 loadServerInfo();
 load("today").catch(() => {
   $("#view-today").innerHTML = emptyBox("alert", "서버에 연결하지 못했어요");
